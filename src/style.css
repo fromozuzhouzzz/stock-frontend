@@ -1,0 +1,295 @@
+:root {
+  /* 更新为 Flat Remix 风格的配色方案 */
+  --primary-color: #367bf0;     /* Flat Remix 主色调 */
+  --success-color: #27ae60;     /* 成功绿色 */
+  --warning-color: #f2d57e;     /* 警告黄色 */
+  --danger-color: #e95420;      /* 错误红色 */
+  --info-color: #64727d;        /* 信息灰色 */
+  
+  /* 文字颜色 - 提高对比度 */
+  --text-primary: #2b2b2b;      /* 主要文字 */
+  --text-regular: #3c3c3c;      /* 常规文字 */
+  --text-secondary: #5c5c5c;    /* 次要文字 */
+  
+  /* 边框和背景 */
+  --border-color: #dcdcdc;
+  --border-light: #efefef;
+  --background-color: #f6f6f6;  /* Flat Remix 特征背景色 */
+  
+  /* 扩展配色 */
+  --hover-primary: #4a8ef2;     /* 主色调悬停 */
+  --active-primary: #2d6ed7;    /* 主色调激活 */
+  --disabled-bg: #f5f5f5;       /* 禁用背景 */
+  --disabled-text: #a0a0a0;     /* 禁用文字 */
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: light;
+  color: var(--text-regular);
+  background-color: var(--background-color);
+
+  /* 添加一些新的变量 */
+  /* 阴影变量 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  /* 圆角变量 */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: inherit;
+}
+a:hover {
+  color: var(--hover-primary);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.card {
+  padding: 2em;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Element Plus 组件全局样式覆盖 */
+.el-dialog {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.el-message {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 添加一些通用的工具类 */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-regular {
+  color: var(--text-regular);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.border {
+  border: 1px solid var(--border-color);
+}
+
+.rounded {
+  border-radius: 4px;
+}
+
+/* Element Plus 组件的额外样式覆盖 */
+.el-card {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+.el-input__wrapper {
+  border-radius: var(--radius-md) !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.el-select__wrapper {
+  box-shadow: none !important;
+}
+
+.el-pagination {
+  --el-pagination-border-radius: var(--radius-md);
+  --el-pagination-hover-color: var(--hover-primary);
+  --el-pagination-button-color: var(--text-regular);
+  --el-pagination-button-disabled-color: var(--disabled-text);
+  padding: 16px 0;
+}
+
+.el-table {
+  --el-table-border-color: var(--border-color);
+  --el-table-header-bg-color: var(--background-color);
+  --el-table-row-hover-bg-color: var(--border-light);
+  --el-table-header-text-color: var(--text-primary);
+  --el-table-text-color: var(--text-regular);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* 修改按钮样式 */
+.el-button {
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.el-button--primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.el-button--primary:hover {
+  background: var(--hover-primary);
+  border-color: var(--hover-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* 修改表格样式 */
+.el-table th {
+  background: var(--background-color) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600;
+}
+
+/* 修改标签样式 */
+.el-tag--success {
+  background: #dff2e7;
+  color: var(--success-color);
+}
+
+.el-tag--danger {
+  background: #fde8e1;
+  color: var(--danger-color);
+}
+
+/* 添加一些新的状态类 */
+.text-disabled {
+  color: var(--disabled-text);
+}
+
+.bg-disabled {
+  background-color: var(--disabled-bg);
+}
+
+/* 确保输入框有足够的对比度 */
+.el-input__wrapper {
+  background-color: #ffffff !important;
+}
+
+.el-input__inner {
+  color: var(--text-primary) !important;
+}
+
+/* 确保下拉菜单文字清晰 */
+.el-select-dropdown__item {
+  color: var(--text-regular);
+}
+
+.el-select-dropdown__item.selected {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* 分页器样式优化 */
+.el-pagination {
+  --el-pagination-hover-color: var(--hover-primary);
+  --el-pagination-button-color: var(--text-regular);
+  --el-pagination-button-disabled-color: var(--disabled-text);
+}
+
+/* 对话框样式优化 */
+.el-dialog {
+  --el-dialog-title-color: var(--text-primary);
+  --el-dialog-content-color: var(--text-regular);
+}
+
+/* 优化输入框样式 */
+.el-input__wrapper {
+  background-color: #ffffff !important;
+}
+
+/* 优化下拉菜单样式 */
+.el-select-dropdown {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* 添加过渡效果 */
+.el-button,
+.el-input__wrapper,
+.el-select__wrapper,
+.el-tag {
+  transition: all 0.2s ease;
+}
