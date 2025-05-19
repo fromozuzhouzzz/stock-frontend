@@ -2,11 +2,20 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from '@/types'
 import request from '@/utils/request'
-import { changePassword as apiChangePassword, login as apiLogin } from '@/api/auth'
+import { 
+  changePassword as apiChangePassword, 
+  login as apiLogin,
+  refreshToken as apiRefreshToken,
+  checkSession as apiCheckSession
+} from '@/api/auth'
+import { isTokenExpiredOrExpiring } from '@/utils/jwt'
+import { ElMessage } from 'element-plus'
 
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(null)
   const token = ref<string | null>(null)
+  const isRefreshingToken = ref(false)
+  const refreshPromise = ref<Promise<boolean> | null>(null)
 
   const isLoggedIn = computed(() => !!token.value)
 
@@ -82,6 +91,100 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /**
+   * 刷新token
+   * @returns 是否刷新成功
+   */
+  async function refreshToken() {
+    // 如果已经在刷新中，直接返回刷新的Promise
+    if (isRefreshingToken.value && refreshPromise.value) {
+      return refreshPromise.value
+    }
+
+    console.log('开始刷新token')
+    isRefreshingToken.value = true
+    
+    // 创建新的Promise，并保存引用，以便可以在其他请求中共享结果
+    refreshPromise.value = new Promise<boolean>(async (resolve) => {
+      try {
+        if (!token.value) {
+          console.warn('无token可刷新，需要重新登录')
+          logout()
+          resolve(false)
+          return
+        }
+
+        const response = await apiRefreshToken()
+        const responseData = response.data
+        
+        if (responseData && responseData.access_token) {
+          console.log('成功获取新token')
+          token.value = responseData.access_token
+          localStorage.setItem('token', responseData.access_token)
+          resolve(true)
+        } else {
+          console.error('刷新token失败: 未收到新token')
+          logout()
+          resolve(false)
+        }
+      } catch (error) {
+        console.error('刷新token出错:', error)
+        logout()
+        resolve(false)
+      } finally {
+        isRefreshingToken.value = false
+        refreshPromise.value = null
+      }
+    })
+
+    return refreshPromise.value
+  }
+
+  /**
+   * 检查token状态
+   * @returns 如果token有效，返回true；否则返回false
+   */
+  async function checkTokenStatus(): Promise<boolean> {
+    if (!token.value) {
+      return false
+    }
+
+    // 检查token是否过期或即将过期
+    if (isTokenExpiredOrExpiring(token.value)) {
+      console.log('Token已过期或即将过期，尝试刷新')
+      return await refreshToken()
+    }
+
+    try {
+      // 即使token看起来有效，仍然检查会话状态
+      await apiCheckSession()
+      return true
+    } catch (error) {
+      console.warn('会话状态检查失败:', error)
+      // 尝试刷新token
+      return await refreshToken()
+    }
+  }
+
+  /**
+   * 检查并确保会话有效
+   * 用于应用启动时或从后台恢复时
+   */
+  async function ensureValidSession(): Promise<boolean> {
+    try {
+      const isValid = await checkTokenStatus()
+      if (!isValid) {
+        ElMessage.warning('会话已过期，请重新登录')
+        logout()
+      }
+      return isValid
+    } catch (error) {
+      console.error('检查会话有效性失败:', error)
+      logout()
+      return false
+    }
+  }
+
   // 执行初始化
   init()
 
@@ -92,6 +195,10 @@ export const useUserStore = defineStore('user', () => {
     login,
     logout,
     init,
-    changePassword
+    changePassword,
+    refreshToken,
+    checkTokenStatus,
+    ensureValidSession,
+    isRefreshingToken
   }
 }) 
