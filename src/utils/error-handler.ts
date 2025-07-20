@@ -8,7 +8,9 @@ interface ApiError {
 }
 
 export function handleApiError(error: unknown) {
-  console.error('API Error:', error)
+  if (import.meta.env.DEV) {
+    console.error('API Error:', error)
+  }
   
   if (isAxiosError(error)) {
     const apiError = error.response?.data as ApiError

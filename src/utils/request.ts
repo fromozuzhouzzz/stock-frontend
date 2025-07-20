@@ -82,16 +82,19 @@ request.interceptors.response.use(
     return response.data
   },
   async error => {
-    console.error('Response error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      data: error.response?.data
-    })
+    // 仅在开发环境输出详细错误日志
+    if (import.meta.env.DEV) {
+      console.error('Response error:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data
+      })
 
-    // 特殊处理销售导入API的错误
-    if (error.config?.url?.includes('/api/sales/import/')) {
-      console.error('销售导入API错误:', error.response?.data)
+      // 特殊处理销售导入API的错误
+      if (error.config?.url?.includes('/api/sales/import/')) {
+        console.error('销售导入API错误:', error.response?.data)
+      }
     }
 
     // 获取原始请求配置
@@ -196,11 +199,15 @@ request.interceptors.response.use(
 
       // 使用指数退避算法，等待时间随重试次数增加
       const retryDelay = Math.pow(2, originalRequest._retryCount) * 1000
-      console.log(`服务器错误，${retryDelay}ms后重试(${originalRequest._retryCount}/3)`)
-      
+      if (import.meta.env.DEV) {
+        console.log(`服务器错误，${retryDelay}ms后重试(${originalRequest._retryCount}/3)`)
+      }
+
       return new Promise(resolve => {
         setTimeout(() => {
-          console.log('重试请求:', originalRequest.url)
+          if (import.meta.env.DEV) {
+            console.log('重试请求:', originalRequest.url)
+          }
           resolve(axios(originalRequest))
         }, retryDelay)
       })

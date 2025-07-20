@@ -21,19 +21,9 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_BASE_URL || 'http://localhost:5000',
-          changeOrigin: true,
-          configure: (proxy, options) => {
-            proxy.on('error', (err, req, res) => {
-              console.log('proxy error', err)
-            })
-            proxy.on('proxyReq', (proxyReq, req, res) => {
-              console.log('Sending Request:', req.method, req.url)
-            })
-            proxy.on('proxyRes', (proxyRes, req, res) => {
-              console.log('Received Response:', proxyRes.statusCode)
-            })
-          }
+          target: env.VITE_API_BASE_URL || 'http://localhost:7860',
+          changeOrigin: true
+          // 生产环境移除调试日志
         }
       }
     }

@@ -712,34 +712,42 @@ const inventoryList = computed(() => inventoryStore.inventoryList)
 const materialStoreTotals = computed(() => {
   const totals = new Map();
   
-  // 首先计算每个物料-门店组合的总库存
+  // 计算每个物料-门店组合的总库存（加工前后合并）
   inventoryList.value.forEach(item => {
     // 判断是否为加工物料
     const isProcessed = isProcessedMaterial(item);
-    
-    // 创建包含加工状态的键
-    const key = `${item.material_id}-${item.store_id}-${isProcessed ? 1 : 0}`;
-    
+
+    // 创建不包含加工状态的键，实现加工前后合并
+    const key = `${item.material_id}-${item.store_id}`;
+
     if (totals.has(key)) {
       const existing = totals.get(key);
       existing.totalQuantity += item.quantity;
+      // 分别记录加工前后的数量
+      if (isProcessed) {
+        existing.processedQuantity += item.quantity;
+      } else {
+        existing.rawQuantity += item.quantity;
+      }
     } else {
-      // 获取物料信息，以确定正确的预警阈值
+      // 获取物料信息
       const material = materialList.value.find(m => m.id === item.material_id);
-      // 优先使用物料表中的预警阈值
+
+      // 预警阈值使用原始物料的阈值（因为预警基于原始需求）
       let warningThreshold = 0;
-      if (isProcessed && material && material.processed_warning_threshold) {
-        warningThreshold = material.processed_warning_threshold;
-      } else if (!isProcessed && material && material.warning_threshold) {
+      if (material && material.warning_threshold) {
         warningThreshold = material.warning_threshold;
       } else {
         warningThreshold = item.warning_threshold;
       }
-      
+
       totals.set(key, {
-        totalQuantity: item.quantity,
+        totalQuantity: item.quantity,  // 总库存
+        rawQuantity: isProcessed ? 0 : item.quantity,  // 加工前数量
+        processedQuantity: isProcessed ? item.quantity : 0,  // 加工后数量
         warning_threshold: warningThreshold,
-        isProcessed: isProcessed
+        hasProcessed: material && material.processed_name ? true : false,  // 是否支持加工
+        material: material
       });
     }
   });
@@ -752,100 +760,83 @@ const materialStoreTotals = computed(() => {
   return totals;
 });
 
-// 修改原始库存列表，添加基于总库存的预警状态
+// 修改原始库存列表，添加基于合并总库存的预警状态
 const processedInventoryList = computed(() => {
   return inventoryList.value.map(item => {
-    // 判断是否为加工物料
-    const isProcessed = isProcessedMaterial(item);
-    
-    // 使用包含加工状态的键
-    const key = `${item.material_id}-${item.store_id}-${isProcessed ? 1 : 0}`;
+    // 使用不包含加工状态的键，获取合并后的总库存数据
+    const key = `${item.material_id}-${item.store_id}`;
     const totalData = materialStoreTotals.value.get(key);
-    
+
     // 创建新对象，避免修改原始数据
     return {
       ...item,
-      // 覆盖原有的warning字段，使用基于总库存的预警状态
+      // 覆盖原有的warning字段，使用基于合并总库存的预警状态
       warning: totalData ? totalData.warning : item.warning,
-      // 添加组合的总库存数量，方便显示
-      totalGroupQuantity: totalData ? totalData.totalQuantity : item.quantity
+      // 添加合并后的总库存数量，方便显示
+      totalGroupQuantity: totalData ? totalData.totalQuantity : item.quantity,
+      // 添加加工前后的分别数量
+      rawQuantity: totalData ? totalData.rawQuantity : (isProcessedMaterial(item) ? 0 : item.quantity),
+      processedQuantity: totalData ? totalData.processedQuantity : (isProcessedMaterial(item) ? item.quantity : 0)
     };
   });
 });
 
-// 计算属性：合并同一门店同一物料的多个批次库存为一条记录
+// 计算属性：合并同一门店同一物料的多个批次库存为一条记录（支持加工前后合并）
 const mergedInventoryList = computed(() => {
-  // 创建分组映射: {material_id}-{store_id}-{是否为加工物料} => 合并后的记录
-  const groupedMap = new Map<string, Inventory & { batchCount?: number, isProcessed?: boolean }>()
-  
-  // 创建批次计数映射
-  const batchCountMap = new Map<string, number>()
-  
-  // 遍历原始库存数据
-  inventoryList.value.forEach(item => {
-    // 判断是否为加工物料
-    const isProcessed = isProcessedMaterial(item)
-    
-    // 创建分组键，加入是否为加工物料的标志
-    const key = `${item.material_id}-${item.store_id}-${isProcessed ? 'processed' : 'raw'}`
-    
-    // 增加批次计数
-    batchCountMap.set(key, (batchCountMap.get(key) || 0) + 1)
-    
-    if (groupedMap.has(key)) {
-      // 如果已存在该物料和门店的组合，则累加数量
-      const existing = groupedMap.get(key)!
-      // 累加数量
-      existing.quantity += item.quantity
-      // 更新批次计数
-      existing.batchCount = batchCountMap.get(key)
-      // 标记是否为加工物料
-      existing.isProcessed = Boolean(isProcessed)
-      
-      // 更新到期日期（取最早的那个日期）
-      if (item.expiry_date && existing.expiry_date) {
-        const existingDate = new Date(existing.expiry_date)
-        const itemDate = new Date(item.expiry_date)
-        if (itemDate < existingDate) {
-          existing.expiry_date = item.expiry_date
-        }
-      } else if (item.expiry_date) {
-        existing.expiry_date = item.expiry_date
+  // 基于materialStoreTotals创建合并记录
+  const result: Array<Inventory & {
+    batchCount?: number,
+    isProcessed?: boolean,
+    rawQuantity?: number,
+    processedQuantity?: number,
+    totalGroupQuantity?: number
+  }> = []
+
+  // 遍历合并后的总库存数据
+  materialStoreTotals.value.forEach((totalData, key) => {
+    const [materialId, storeId] = key.split('-').map(Number)
+
+    // 查找该物料-门店组合的第一个库存记录作为模板
+    const templateItem = inventoryList.value.find(item =>
+      item.material_id === materialId && item.store_id === storeId
+    )
+
+    if (templateItem) {
+      // 计算该组合的总批次数
+      const totalBatches = inventoryList.value.filter(item =>
+        item.material_id === materialId && item.store_id === storeId
+      ).length
+
+      // 查找最早的到期日期
+      const allItems = inventoryList.value.filter(item =>
+        item.material_id === materialId && item.store_id === storeId
+      )
+      const earliestExpiryDate = allItems
+        .filter(item => item.expiry_date)
+        .map(item => item.expiry_date)
+        .sort()[0]
+
+      // 创建合并记录
+      const mergedItem = {
+        ...templateItem,
+        quantity: totalData.totalQuantity,  // 使用合并后的总库存
+        batch_number: totalBatches > 1 ? '多批次' : templateItem.batch_number,
+        batchCount: totalBatches,
+        expiry_date: earliestExpiryDate || templateItem.expiry_date,
+        warning: totalData.warning,  // 使用基于总库存的预警状态
+        // 添加额外信息
+        rawQuantity: totalData.rawQuantity,
+        processedQuantity: totalData.processedQuantity,
+        totalGroupQuantity: totalData.totalQuantity,
+        hasProcessed: totalData.hasProcessed,
+        isProcessed: totalData.processedQuantity > 0  // 如果有加工后的数量，标记为加工物料
       }
-    } else {
-      // 如果不存在，创建新的合并记录
-      const processed = { 
-        ...item,
-        // 添加一个标记，表示这是合并后的记录
-        batch_number: batchCountMap.get(key)! > 1 ? '多批次' : item.batch_number,
-        // 添加批次计数
-        batchCount: batchCountMap.get(key),
-        // 标记是否为加工物料
-        isProcessed: Boolean(isProcessed)
-      }
-      
-      groupedMap.set(key, processed)
+
+      result.push(mergedItem)
     }
   })
-  
-  // 获取合并后的数组
-  const result = Array.from(groupedMap.values());
-  
-  // 更新预警状态
-  result.forEach(item => {
-    // 如果是加工物料，使用加工后的预警阈值
-    if (item.isProcessed) {
-      const material = materialList.value.find(m => m.id === item.material_id)
-      if (material && material.processed_warning_threshold) {
-        item.warning = item.quantity <= material.processed_warning_threshold
-      }
-    } else {
-      // 基于合并后的数量更新预警状态
-      item.warning = item.quantity <= item.warning_threshold;
-    }
-  });
-  
-  return result;
+
+  return result
 })
 
 // 添加合并显示模式的开关状态

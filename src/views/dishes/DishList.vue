@@ -203,7 +203,9 @@ const handleDelete = async (row: Dish) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除失败:', error)
+      if (import.meta.env.DEV) {
+        console.error('删除失败:', error)
+      }
       ElMessage.error('删除失败')
     }
   }

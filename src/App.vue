@@ -25,7 +25,10 @@ onMounted(async () => {
     try {
       await userStore.ensureValidSession()
     } catch (error) {
-      console.error('会话状态检查失败:', error)
+      // 生产环境仅在开发模式下输出错误日志
+      if (import.meta.env.DEV) {
+        console.error('会话状态检查失败:', error)
+      }
       // 显示网络错误处理组件
       if (networkErrorHandler.value) {
         networkErrorHandler.value.show()
@@ -50,7 +53,9 @@ const handleVisibilityChange = async () => {
         try {
           await userStore.ensureValidSession()
         } catch (error) {
-          console.error('会话状态检查失败:', error)
+          if (import.meta.env.DEV) {
+            console.error('会话状态检查失败:', error)
+          }
           // 显示网络错误处理组件
           if (networkErrorHandler.value) {
             networkErrorHandler.value.show()
@@ -81,7 +86,9 @@ onActivated(async () => {
     try {
       await userStore.ensureValidSession()
     } catch (error) {
-      console.error('会话状态检查失败:', error)
+      if (import.meta.env.DEV) {
+        console.error('会话状态检查失败:', error)
+      }
       // 显示网络错误处理组件
       if (networkErrorHandler.value) {
         networkErrorHandler.value.show()
@@ -100,7 +107,9 @@ const handleOnline = () => {
   // 检查会话状态
   if (userStore.isLoggedIn) {
     userStore.ensureValidSession().catch(error => {
-      console.error('网络恢复后会话检查失败:', error)
+      if (import.meta.env.DEV) {
+        console.error('网络恢复后会话检查失败:', error)
+      }
     })
   }
 }

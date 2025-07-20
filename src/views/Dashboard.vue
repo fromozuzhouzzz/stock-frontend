@@ -30,16 +30,28 @@
               min-width="120"
               show-overflow-tooltip
             />
-            <el-table-column 
-              prop="quantity" 
-              label="当前库存" 
-              width="100"
+            <el-table-column
+              prop="quantity"
+              label="当前库存"
+              width="140"
               align="right"
             >
               <template #default="{ row }">
-                <span :class="{ 'warning-text': row.quantity < row.warning_threshold }">
-                  {{ row.quantity }} {{ row.unit }}
-                </span>
+                <div>
+                  <span :class="{ 'warning-text': row.quantity < row.warning_threshold }">
+                    总计: {{ row.quantity }} {{ row.unit }}
+                  </span>
+                  <!-- 如果有加工前后的详细信息，显示分解 -->
+                  <div v-if="row.has_processed && (row.raw_quantity > 0 || row.processed_quantity > 0)"
+                       class="text-xs text-gray-500 mt-1">
+                    <div v-if="row.raw_quantity > 0">
+                      原料: {{ row.raw_quantity }} {{ row.unit }}
+                    </div>
+                    <div v-if="row.processed_quantity > 0">
+                      {{ row.processed_name || '加工品' }}: {{ row.processed_quantity }} {{ row.processed_unit || row.unit }}
+                    </div>
+                  </div>
+                </div>
               </template>
             </el-table-column>
             <el-table-column 
