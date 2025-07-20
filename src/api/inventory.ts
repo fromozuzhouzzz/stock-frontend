@@ -16,6 +16,7 @@ export interface UpdateStockData {
   expiry_date?: string
   warning_threshold?: number
   type?: 'add' | 'edit'
+  auto_process?: boolean // 自动入库加工标志
 }
 
 export function updateInventory(data: UpdateStockData) {

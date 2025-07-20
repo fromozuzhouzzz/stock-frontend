@@ -360,6 +360,18 @@
           />
           <div class="form-item-tip">预警阈值自动使用物料管理中设置的标准值</div>
         </el-form-item>
+
+        <!-- 自动入库加工控件 -->
+        <el-form-item v-if="canAutoProcess" label="自动入库加工">
+          <el-switch
+            v-model="form.auto_process"
+            active-text="启用"
+            inactive-text="禁用"
+          />
+          <div class="form-item-tip">
+            启用后，物料入库到总库房时将自动执行加工流程，生成加工后的物料
+          </div>
+        </el-form-item>
       </el-form>
       
       <template #footer>
@@ -684,7 +696,8 @@ const form = ref({
   unit_price: undefined as number | undefined,
   production_date: '',
   expiry_date: '',
-  warning_threshold: undefined as number | undefined
+  warning_threshold: undefined as number | undefined,
+  auto_process: true // 默认启用自动入库加工
 })
 
 // 计算属性
@@ -959,7 +972,8 @@ const handleAdd = () => {
     unit_price: undefined,
     production_date: '',
     expiry_date: '',
-    warning_threshold: undefined
+    warning_threshold: undefined,
+    auto_process: true // 默认启用自动入库加工
   }
   // 自动生成批次号
   generateBatchNumber()
@@ -1012,7 +1026,7 @@ const handleEdit = (row: Inventory) => {
 // 处理物料选择变化
 const handleMaterialChange = (materialId: number) => {
   if (!materialId) return
-  
+
   // 从物料列表中查找选中的物料
   const selectedMaterial = materialList.value.find(m => m.id === materialId)
   if (selectedMaterial) {
@@ -1021,6 +1035,14 @@ const handleMaterialChange = (materialId: number) => {
     // 确保入库操作使用物料标准预警阈值，保持系统一致性
     form.value.warning_threshold = selectedMaterial.warning_threshold
     console.log(`自动设置${selectedMaterial.name}的预警阈值为${selectedMaterial.warning_threshold}`)
+
+    // 根据物料是否有加工信息来设置自动加工状态
+    if (hasMaterialProcessingInfo(materialId)) {
+      form.value.auto_process = true // 有加工信息时默认启用
+      console.log(`物料${selectedMaterial.name}支持加工，已启用自动入库加工`)
+    } else {
+      form.value.auto_process = false // 无加工信息时禁用
+    }
   }
 }
 
@@ -1493,6 +1515,11 @@ const hasMaterialProcessingInfo = (materialId: number) => {
   const material = materialList.value.find(m => m.id === materialId)
   return material && material.processed_name && material.conversion_ratio
 }
+
+// 计算当前选择的物料是否支持自动加工
+const canAutoProcess = computed(() => {
+  return form.value.material_id ? hasMaterialProcessingInfo(form.value.material_id) : false
+})
 
 // 打开加工对话框
 const handleProcessing = (row: Inventory) => {
