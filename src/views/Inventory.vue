@@ -1013,7 +1013,8 @@ const handleEdit = (row: Inventory) => {
     unit_price: row.unit_price,
     production_date: row.production_date || '',
     expiry_date: row.expiry_date || '',
-    warning_threshold: currentWarningThreshold
+    warning_threshold: currentWarningThreshold,
+    auto_process: false // 编辑模式下默认不启用自动加工
   }
   
   // 如果批次详情对话框是打开的，先关闭它
